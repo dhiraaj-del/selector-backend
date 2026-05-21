@@ -143,7 +143,7 @@ app.post('/create-order', async (req, res) => {
       return res.status(400).json({ error: 'Valid email required' });
 
     const order = await getRazorpay().orders.create({
-      amount: 399900, // ₹3,999 in paise
+      amount: 199900, // ₹1,999 in paise
       currency: 'INR',
       receipt: `sel_${Date.now()}`,
       notes: { email },
@@ -239,7 +239,7 @@ app.get('/stats', async (req, res) => {
     totalOrders:   parseInt(orders.rows[0].count),
     paidOrders:    paidCount,
     totalLicenses: parseInt(licenses.rows[0].count),
-    revenue:       `₹${paidCount * 3999}`,
+    revenue:       `₹${paidCount * 1999}`,
   });
 });
 
