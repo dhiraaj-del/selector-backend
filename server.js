@@ -255,3 +255,41 @@ initDb().then(() => {
   console.error('DB init failed:', e.message);
   process.exit(1);
 });
+
+// ── Dodo Payments Webhook ─────────────────────────────────────────
+app.post('/webhook/dodo', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const payload = req.body;
+    const event = JSON.parse(payload.toString());
+
+    console.log(`[Dodo] Webhook received: ${event.type}`);
+
+    if (event.type === 'payment.succeeded') {
+      const { customer, payment_id, product_id } = event.data;
+      const email = customer?.email;
+      if (!email) return res.json({ ok: true });
+
+      // Check if license already issued
+      const existing = await pool.query('SELECT * FROM licenses WHERE order_id=$1', [payment_id]);
+      if (existing.rows.length > 0) return res.json({ ok: true });
+
+      const licenseKey = generateLicenseKey();
+      await pool.query(
+        'INSERT INTO licenses (id, key, email, order_id, payment_id) VALUES ($1,$2,$3,$4,$5)',
+        [uuid(), licenseKey, email, payment_id, payment_id]
+      );
+
+      try {
+        await sendLicenseEmail(email, licenseKey, payment_id);
+        console.log(`[Dodo] License ${licenseKey} sent to ${email}`);
+      } catch (e) {
+        console.error('[Dodo Email]', e.message);
+      }
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[Dodo Webhook]', e.message);
+    res.status(400).json({ error: e.message });
+  }
+});
