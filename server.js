@@ -161,3 +161,43 @@ initDb().then(() => {
   console.error('DB init failed:', e.message);
   process.exit(1);
 });
+
+// ── Validate Dodo License Key ─────────────────────────────────────
+app.post('/validate-dodo-key', async (req, res) => {
+  try {
+    const { key, instanceId } = req.body;
+    if (!key) return res.status(400).json({ valid: false, error: 'Key required' });
+
+    const https = require('https');
+    const result = await new Promise((resolve) => {
+      const options = {
+        hostname: 'api.dodopayments.com',
+        path: `/licenses/${key.trim()}/activate`,
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.DODO_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      };
+      const reqBody = JSON.stringify({ instance_name: instanceId || 'Selector' });
+      const r = https.request(options, (resp) => {
+        let d = '';
+        resp.on('data', c => d += c);
+        resp.on('end', () => { try { resolve({ status: resp.statusCode, data: JSON.parse(d) }); } catch { resolve({ status: resp.statusCode, data: d }); } });
+      });
+      r.on('error', () => resolve({ status: 500, data: {} }));
+      r.write(reqBody);
+      r.end();
+    });
+
+    console.log('[Dodo Validate]', key, '→', result.status, JSON.stringify(result.data));
+
+    if (result.status === 200 || result.data?.license_key?.status === 'active') {
+      return res.json({ valid: true, email: result.data?.customer?.email || '' });
+    }
+    return res.json({ valid: false, error: result.data?.message || 'Invalid license key' });
+  } catch (e) {
+    console.error('[Dodo Validate Error]', e.message);
+    res.status(500).json({ valid: false, error: 'Validation failed' });
+  }
+});
