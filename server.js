@@ -171,15 +171,15 @@ app.post('/validate-dodo-key', async (req, res) => {
     const https = require('https');
     const result = await new Promise((resolve) => {
       const options = {
-        hostname: 'api.dodopayments.com',
-        path: `/licenses/${key.trim()}/activate`,
+        hostname: 'live.dodopayments.com',
+        path: '/licenses/activate',
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.DODO_API_KEY}`,
           'Content-Type': 'application/json',
         },
       };
-      const reqBody = JSON.stringify({ instance_name: instanceId || 'Selector' });
+      const reqBody = JSON.stringify({ license_key: key.trim(), name: instanceId || 'Selector' });
       const r = https.request(options, (resp) => {
         let d = '';
         resp.on('data', c => d += c);
