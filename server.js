@@ -127,7 +127,7 @@ app.post('/validate-dodo-key', async (req, res) => {
     const name = 'Selector-' + Date.now();
     const result = await dodoActivate(key.trim(), name);
     console.log('[Dodo Validate]', key, '->', result.status, JSON.stringify(result.data));
-    if (result.status === 200 && result.data && result.data.id) {
+    if (result.status >= 200 && result.status < 300 && result.data && result.data.id) {
       const email = (result.data.customer && result.data.customer.email) || '';
       return res.json({ valid: true, email: email });
     }
