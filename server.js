@@ -192,7 +192,7 @@ app.post('/validate-dodo-key', async (req, res) => {
 
     console.log('[Dodo Validate]', key, '→', result.status, JSON.stringify(result.data));
 
-    if (result.status === 200 || result.data?.license_key?.status === 'active') {
+    if (result.status === 200 && result.data?.id) {
       return res.json({ valid: true, email: result.data?.customer?.email || '' });
     }
     return res.json({ valid: false, error: result.data?.message || 'Invalid license key' });
