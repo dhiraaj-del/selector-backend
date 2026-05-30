@@ -172,14 +172,14 @@ app.post('/validate-dodo-key', async (req, res) => {
     const result = await new Promise((resolve) => {
       const options = {
         hostname: 'live.dodopayments.com',
-        path: '/licenses/validate',
+        path: '/licenses/activate',
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.DODO_API_KEY}`,
           'Content-Type': 'application/json',
         },
       };
-      const reqBody = JSON.stringify({ license_key: key.trim() });
+      const reqBody = JSON.stringify({ license_key: key.trim(), name: instanceId || 'Selector-' + Date.now() });
       const r = https.request(options, (resp) => {
         let d = '';
         resp.on('data', c => d += c);
@@ -192,7 +192,7 @@ app.post('/validate-dodo-key', async (req, res) => {
 
     console.log('[Dodo Validate]', key, '→', result.status, JSON.stringify(result.data));
 
-    if (result.status === 200 && result.data?.id) {
+    if ((result.status === 200 && result.data?.id) || (result.status === 409)) {
       return res.json({ valid: true, email: result.data?.customer?.email || '' });
     }
     return res.json({ valid: false, error: result.data?.message || 'Invalid license key' });
